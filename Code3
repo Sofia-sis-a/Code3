@@ -1,0 +1,117 @@
+#include <iostream>
+#include <fstream>
+#include <cstring>
+#include <stdexcept>
+
+class CallTracker {
+private:
+    char* contactName;
+    char* phoneNumber;
+    double maxDuration;
+    double minDuration;
+    double totalDuration;
+    int totalCalls;
+
+public:
+    // ЛР №3: Конструктор с параметром по умолчанию
+    // Если передать только номер, он скопируется и в имя
+    CallTracker(const char* phone, const char* name = nullptr) {
+        if (!phone || std::strlen(phone) < 3) throw std::invalid_argument("Некорректный номер");
+
+        phoneNumber = new char[std::strlen(phone) + 1];
+        std::strcpy(phoneNumber, phone);
+
+        // Логика: если имя не передано (nullptr), используем номер как имя
+        const char* finalName = (name != nullptr) ? name : phone;
+        contactName = new char[std::strlen(finalName) + 1];
+        std::strcpy(contactName, finalName);
+
+        maxDuration = minDuration = totalDuration = 0;
+        totalCalls = 0;
+    }
+
+    ~CallTracker() {
+        delete[] contactName;
+        delete[] phoneNumber;
+    }
+
+    void addCall(double duration) {
+        if (duration < 0) throw std::domain_error("Отрицательное время");
+        if (totalCalls == 0) {
+            maxDuration = minDuration = duration;
+        } else {
+            if (duration > maxDuration) maxDuration = duration;
+            if (duration < minDuration) minDuration = duration;
+        }
+        totalDuration += duration;
+        totalCalls++;
+    }
+
+    // Селекторы для операторов
+    double getTotalDuration() const { return totalDuration; }
+    const char* getName() const { return contactName; }
+    const char* getPhone() const { return phoneNumber; }
+
+    // ЛР №3: Перегрузка операторов ввода-вывода (friend)
+    friend std::ostream& operator << (std::ostream& os, const CallTracker& obj) {
+        os << obj.contactName << " " << obj.phoneNumber << " " 
+           << obj.maxDuration << " " << obj.minDuration << " " 
+           << obj.totalDuration << " " << obj.totalCalls;
+        return os;
+    }
+
+    friend std::istream& operator >> (std::istream& is, CallTracker& obj) {
+        char bufferName[256], bufferPhone[256];
+        if (is >> bufferName >> bufferPhone >> obj.maxDuration >> obj.minDuration >> obj.totalDuration >> obj.totalCalls) {
+            delete[] obj.contactName;
+            delete[] obj.phoneNumber;
+            obj.contactName = new char[std::strlen(bufferName) + 1];
+            std::strcpy(obj.contactName, bufferName);
+            obj.phoneNumber = new char[std::strlen(bufferPhone) + 1];
+            std::strcpy(obj.phoneNumber, bufferPhone);
+        }
+        return is;
+    }
+};
+
+// ЛР №3: Перегрузка оператора += ВНЕ класса
+// Суммирует общее время разговоров объекта к переданной переменной
+double& operator += (double& sum, const CallTracker& obj) {
+    sum += obj.getTotalDuration();
+    return sum;
+}
+
+int main() {
+    try {
+        // Тест конструктора по умолчанию (только номер)
+        CallTracker ghostCall("+79110000000"); 
+        ghostCall.addCall(10.5);
+
+        // Тест оператора +=
+        double allTalksTime = 0;
+        allTalksTime += ghostCall; 
+        std::cout << "Общее время всех абонентов: " << allTalksTime << " мин." << std::endl;
+
+        // Тест записи в файл
+        std::ofstream outFile("calls.txt");
+        if (outFile.is_open()) {
+            outFile << ghostCall;
+            outFile.close();
+            std::cout << "Данные сохранены в файл!" << std::endl;
+        }
+
+        // Тест чтения из файла
+        CallTracker importedCall("temp", "temp");
+        std::ifstream inFile("calls.txt");
+        if (inFile.is_open()) {
+            inFile >> importedCall;
+            inFile.close();
+            std::cout << "Загружен абонент: " << importedCall.getName() << std::endl;
+        }
+
+    } catch (const std::exception& e) {
+        std::cerr << "Критическая ошибка: " << e.what() << std::endl;
+    }
+    return 0;
+}
+
