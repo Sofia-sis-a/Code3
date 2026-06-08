@@ -3,11 +3,8 @@
 #include <stdexcept>
 
 CallTracker::CallTracker(const char* phone, const char* name) {
-    if (phone == nullptr) {
-        throw std::invalid_argument("Ошибка: Указатель на телефон не может быть nullptr!");
-    }
-    if (std::strlen(phone) == 0) {
-        throw std::logic_error("Ошибка: Номер телефона не может быть пустым!");
+    if (phone == nullptr || std::strlen(phone) == 0) {
+        throw std::invalid_argument("Ошибка: Номер телефона не может быть пустым!");
     }
 
     phoneNumber = new char[std::strlen(phone) + 1];
@@ -20,11 +17,6 @@ CallTracker::CallTracker(const char* phone, const char* name) {
         subscriberName = new char[std::strlen(name) + 1];
         std::strcpy(subscriberName, name);
     }
-
-    maxCallDuration = 0.0;
-    minCallDuration = 0.0;
-    totalDuration = 0.0;
-    totalCalls = 0;
 }
 
 CallTracker::~CallTracker() {
@@ -32,6 +24,9 @@ CallTracker::~CallTracker() {
     delete[] phoneNumber;
 }
 
+// Селекторы
+const char* CallTracker::getName() const { return subscriberName; }
+const char* CallTracker::getPhone() const { return phoneNumber; }
 double CallTracker::getMaxDuration() const { return maxCallDuration; }
 double CallTracker::getMinDuration() const { return minCallDuration; }
 double CallTracker::getTotalDuration() const { return totalDuration; }
@@ -45,20 +40,21 @@ double CallTracker::getAverageDuration() const {
 }
 
 bool CallTracker::isFrequentCommunication() const {
-    return totalDuration > 60.0;
+    return totalDuration > FREQUENT_THRESHOLD;
 }
 
 void CallTracker::addCall(double duration) {
     if (duration <= 0) {
         throw std::out_of_range("Ошибка: Длительность звонка должна быть больше нуля!");
     }
+
     if (totalCalls == 0) {
-        minCallDuration = duration;
-        maxCallDuration = duration;
+        minCallDuration = maxCallDuration = duration;
     } else {
         if (duration > maxCallDuration) maxCallDuration = duration;
         if (duration < minCallDuration) minCallDuration = duration;
     }
+
     totalDuration += duration;
     totalCalls++;
 }
@@ -71,49 +67,49 @@ void CallTracker::printInfo() const {
     std::cout << "Общая длительность: " << totalDuration << " мин." << std::endl;
     std::cout << "Макс. звонок: " << maxCallDuration << " мин." << std::endl;
     std::cout << "Мин. звонок: " << minCallDuration << " мин." << std::endl;
+    std::cout << "Частое общение: " << (isFrequentCommunication() ? "Да" : "Нет") << std::endl;
     std::cout << "========================================" << std::endl;
 }
 
-std::ostream& operator << (std::ostream& out, const CallTracker& ourObject) {
-    out << ourObject.subscriberName << "\n"
-        << ourObject.phoneNumber << "\n"
-        << ourObject.maxCallDuration << " "
-        << ourObject.minCallDuration << " "
-        << ourObject.totalDuration << " "
-        << ourObject.totalCalls << "\n";
+// Перегрузка операторов
+std::ostream& operator<<(std::ostream& out, const CallTracker& obj) {
+    out << obj.subscriberName << "\n"
+        << obj.phoneNumber << "\n"
+        << obj.maxCallDuration << " "
+        << obj.minCallDuration << " "
+        << obj.totalDuration << " "
+        << obj.totalCalls << "\n";
     return out;
 }
 
-std::istream& operator >> (std::istream& in, CallTracker& ourObject) {
-    char bufferName[256];
-    char bufferPhone[256];
+std::istream& operator>>(std::istream& in, CallTracker& obj) {
+    char bufferName[256] = {};
+    char bufferPhone[256] = {};
 
     in.getline(bufferName, 256);
     in.getline(bufferPhone, 256);
 
     if (std::strlen(bufferName) == 0 || std::strlen(bufferPhone) == 0) {
-        return in; 
+        return in;
     }
 
-    delete[] ourObject.subscriberName;
-    delete[] ourObject.phoneNumber;
+    delete[] obj.subscriberName;
+    delete[] obj.phoneNumber;
 
-    ourObject.subscriberName = new char[std::strlen(bufferName) + 1];
-    std::strcpy(ourObject.subscriberName, bufferName);
+    obj.subscriberName = new char[std::strlen(bufferName) + 1];
+    std::strcpy(obj.subscriberName, bufferName);
 
-    ourObject.phoneNumber = new char[std::strlen(bufferPhone) + 1];
-    std::strcpy(ourObject.phoneNumber, bufferPhone);
+    obj.phoneNumber = new char[std::strlen(bufferPhone) + 1];
+    std::strcpy(obj.phoneNumber, bufferPhone);
 
-    in >> ourObject.maxCallDuration 
-       >> ourObject.minCallDuration 
-       >> ourObject.totalDuration 
-       >> ourObject.totalCalls;
-    
-    in.ignore(); 
+    in >> obj.maxCallDuration >> obj.minCallDuration
+       >> obj.totalDuration >> obj.totalCalls;
+
+    in.ignore();
     return in;
 }
 
-double& operator += (double& sum, const CallTracker& ourObject) {
-    sum += ourObject.getTotalDuration();
+double& operator+=(double& sum, const CallTracker& obj) {
+    sum += obj.getTotalDuration();
     return sum;
 }
