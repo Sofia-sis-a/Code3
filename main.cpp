@@ -5,15 +5,14 @@
 int main() {
     setlocale(LC_ALL, "Russian");
 
-    std::cout << "--- ТЕСТ 1: Конструктор по умолчанию (только телефон) ---" << std::endl;
-    
+    std::cout << "--- ТЕСТ 1: Конструктор с параметром по умолчанию (только телефон) ---" << std::endl;
     CallTracker tracker1("+375-29-111-22-33");
     tracker1.addCall(10.5);
     tracker1.addCall(25.0);
     tracker1.printInfo();
+    std::cout << "Средняя длительность звонка: " << tracker1.getAverageDuration() << " мин." << std::endl;
 
     std::cout << "\n--- ТЕСТ 2: Сохранение данных в файл ---" << std::endl;
-   
     CallTracker tracker2("+1-555-777", "Илон Маск");
     tracker2.addCall(45.2);
     tracker2.addCall(18.3);
@@ -29,7 +28,6 @@ int main() {
     }
 
     std::cout << "\n--- ТЕСТ 3: Чтение данных из файла ---" << std::endl;
-
     CallTracker restoredTracker("000", "Пустой");
     
     std::ifstream inFile("calls_database.txt");
